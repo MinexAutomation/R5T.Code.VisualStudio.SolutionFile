@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\R5T.NetStandard.IO.Types\source\R5T.NetStandard.IO.Types\R5T.NetStandard.IO.Types.csproj" />
     <ProjectReference Include="..\R5T.Code.VisualStudio.SolutionFile\R5T.Code.VisualStudio.SolutionFile.csproj" />
   </ItemGroup>
 

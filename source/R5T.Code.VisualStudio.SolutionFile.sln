@@ -3,11 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "R5T.Code.VisualStudio.SolutionFile.Construction", "R5T.Code.VisualStudio.SolutionFile.Construction\R5T.Code.VisualStudio.SolutionFile.Construction.csproj", "{1498E4A7-EE01-49BB-816C-01BF3E5A762C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "R5T.Code.VisualStudio.SolutionFile.Construction", "R5T.Code.VisualStudio.SolutionFile.Construction\R5T.Code.VisualStudio.SolutionFile.Construction.csproj", "{1498E4A7-EE01-49BB-816C-01BF3E5A762C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "R5T.Code.VisualStudio.SolutionFile", "R5T.Code.VisualStudio.SolutionFile\R5T.Code.VisualStudio.SolutionFile.csproj", "{27D4AC62-546B-4C89-AF1E-1FED8E46B30E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "R5T.Code.VisualStudio.SolutionFile", "R5T.Code.VisualStudio.SolutionFile\R5T.Code.VisualStudio.SolutionFile.csproj", "{27D4AC62-546B-4C89-AF1E-1FED8E46B30E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "R5T.Code.VisualStudio.SolutionFile.Testing", "R5T.Code.VisualStudio.SolutionFile.Testing\R5T.Code.VisualStudio.SolutionFile.Testing.csproj", "{0D6A3F78-FBEF-4121-90D8-A1D909D26C06}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "R5T.Code.VisualStudio.SolutionFile.Testing", "R5T.Code.VisualStudio.SolutionFile.Testing\R5T.Code.VisualStudio.SolutionFile.Testing.csproj", "{0D6A3F78-FBEF-4121-90D8-A1D909D26C06}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Dependencies", "_Dependencies", "{46ED86E8-7646-4389-B4E6-93956CA0B23E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "R5T.NetStandard.IO.Serialization", "..\..\R5T.NetStandard.IO.Serialization\source\R5T.NetStandard.IO.Serialization\R5T.NetStandard.IO.Serialization.csproj", "{1EE45D9B-A202-4978-94A6-F3343533F484}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "R5T.NetStandard.IO.Types", "..\..\R5T.NetStandard.IO.Types\source\R5T.NetStandard.IO.Types\R5T.NetStandard.IO.Types.csproj", "{F825D8D0-FA61-454D-85C7-769398876F47}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,9 +23,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{1498E4A7-EE01-49BB-816C-01BF3E5A762C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -58,5 +61,39 @@ Global
 		{0D6A3F78-FBEF-4121-90D8-A1D909D26C06}.Release|x64.Build.0 = Release|Any CPU
 		{0D6A3F78-FBEF-4121-90D8-A1D909D26C06}.Release|x86.ActiveCfg = Release|Any CPU
 		{0D6A3F78-FBEF-4121-90D8-A1D909D26C06}.Release|x86.Build.0 = Release|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Debug|x64.Build.0 = Debug|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Debug|x86.Build.0 = Debug|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Release|x64.ActiveCfg = Release|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Release|x64.Build.0 = Release|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Release|x86.ActiveCfg = Release|Any CPU
+		{1EE45D9B-A202-4978-94A6-F3343533F484}.Release|x86.Build.0 = Release|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Debug|x64.Build.0 = Debug|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Debug|x86.Build.0 = Debug|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Release|x64.ActiveCfg = Release|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Release|x64.Build.0 = Release|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Release|x86.ActiveCfg = Release|Any CPU
+		{F825D8D0-FA61-454D-85C7-769398876F47}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1EE45D9B-A202-4978-94A6-F3343533F484} = {46ED86E8-7646-4389-B4E6-93956CA0B23E}
+		{F825D8D0-FA61-454D-85C7-769398876F47} = {46ED86E8-7646-4389-B4E6-93956CA0B23E}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6FBB0679-B2FD-4C80-ABBD-846343778F5B}
 	EndGlobalSection
 EndGlobal
