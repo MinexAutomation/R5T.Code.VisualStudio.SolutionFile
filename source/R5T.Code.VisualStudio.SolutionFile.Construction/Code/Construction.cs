@@ -14,8 +14,22 @@ namespace R5T.Code.VisualStudio.SolutionFile.Construction
         {
             //Construction.EnsureBOMProduced();
             //Construction.EnsureNoBOMProduced();
-            Construction.TestRegexes();
+            //Construction.TestRegexes();
             //Construction.DeserializeSolutionFile();
+            Construction.RoundTripSerializeSolutionFile();
+        }
+
+        private static void RoundTripSerializeSolutionFile()
+        {
+            var inputSolutionFilePath = @"C:\Organizations\Rivet\Repositories\Libraries\R5T.Code.VisualStudio.Types\source\R5T.Code.VisualStudio.Types.Construction - Copy.sln";
+
+            var solutionFileSerializer = new SolutionFileSerializer();
+
+            var solutionFile = solutionFileSerializer.Deserialize(inputSolutionFilePath);
+
+            var outputSolutionFilePath = @"C:\Temp\R5T.Code.VisualStudio.Types.Construction - Copy.sln";
+
+            solutionFileSerializer.Serialize(outputSolutionFilePath, solutionFile);
         }
 
         private static void DeserializeSolutionFile()
@@ -36,8 +50,19 @@ namespace R5T.Code.VisualStudio.SolutionFile.Construction
             pattern = SolutionFileTextSerializer.ProjectLineValuesRegexPattern;
             matches = Regex.Matches(line, pattern);
 
+            var projectTypeGUIDStr = matches[0].Value.Trim('"');
+            var projectTypeGUID = Guid.Parse(projectTypeGUIDStr);
+
             line = @"GlobalSection(SolutionConfigurationPlatforms) = preSolution";
             pattern = SolutionFileTextSerializer.GlobalSectionLineValuesRegexPattern;
+            matches = Regex.Matches(line, pattern);
+
+            line = @"EndGlobal";
+            pattern = SolutionFileTextSerializer.GlobalEndLineRegexPattern;
+            matches = Regex.Matches(line, pattern);
+
+            line = @"EndGlobalSection";
+            pattern = SolutionFileTextSerializer.GlobalEndLineRegexPattern;
             matches = Regex.Matches(line, pattern);
         }
 

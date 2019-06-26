@@ -15,21 +15,207 @@ namespace R5T.Code.VisualStudio.IO
         public const string ProjectLineRegexPattern = @"^Project";
         public const string ProjectLineEndRegexPattern = @"^EndProject";
         public const string GlobalLineRegexPattern = @"^Global";
-        public const string GlobalEndLineRegexPattern = @"^EndGlobal";
+        public const string GlobalEndLineRegexPattern = @"^EndGlobal($|\s)";
         public const string GlobalSectionRegexPattern = @"^GlobalSection";
         public const string GlobalSectionEndRegexPattern = @"^EndGlobalSection";
 
-        public const string ProjectLineValuesRegexPattern = @"""[^""]*"""; // Find matches in quotes.
-        public const string GlobalSectionLineValuesRegexPattern = @"\(.*\)|= .*";
+        public const string ProjectLineValuesRegexPattern = @"""([^""]*)"""; // Find matches in quotes, but includes the quotes.
+        public const string GlobalSectionLineValuesRegexPattern = @"\(.*\)|(?<== ).*";
 
 
+        #region Static
 
-        private Regex ProjectLineRegex { get; } = new Regex(SolutionFileTextSerializer.ProjectLineRegexPattern);
-        private Regex ProjectLineEndRegex { get; } = new Regex(SolutionFileTextSerializer.ProjectLineEndRegexPattern);
-        private Regex GlobalLineRegex { get; } = new Regex(SolutionFileTextSerializer.GlobalLineRegexPattern);
-        private Regex GlobalLineEndRegex { get; } = new Regex(SolutionFileTextSerializer.GlobalEndLineRegexPattern);
-        private Regex GlobalSectionRegex { get; } = new Regex(SolutionFileTextSerializer.GlobalSectionRegexPattern);
-        private Regex GlobalSectionEndRegex { get; } = new Regex(SolutionFileTextSerializer.GlobalSectionEndRegexPattern);
+        private static Regex ProjectLineRegex { get; } = new Regex(SolutionFileTextSerializer.ProjectLineRegexPattern);
+        private static Regex ProjectLineEndRegex { get; } = new Regex(SolutionFileTextSerializer.ProjectLineEndRegexPattern);
+        private static Regex GlobalLineRegex { get; } = new Regex(SolutionFileTextSerializer.GlobalLineRegexPattern);
+        private static Regex GlobalLineEndRegex { get; } = new Regex(SolutionFileTextSerializer.GlobalEndLineRegexPattern);
+        private static Regex GlobalSectionRegex { get; } = new Regex(SolutionFileTextSerializer.GlobalSectionRegexPattern);
+        private static Regex GlobalSectionEndRegex { get; } = new Regex(SolutionFileTextSerializer.GlobalSectionEndRegexPattern);
+
+
+        private static void SerializeGlobals(TextWriter writer, SolutionFile solutionFile)
+        {
+            var tabinatedWriter = new TabinatedWriter(writer);
+
+            tabinatedWriter.WriteLine("Global");
+
+            tabinatedWriter.IncreaseTabination();
+            foreach (var globalSection in solutionFile.GlobalSections)
+            {
+                if(globalSection is ISerializableSolutionFileGlobalSection serializableGlobalSection)
+                {
+                    SolutionFileTextSerializer.SerializeGlobal(tabinatedWriter, serializableGlobalSection);
+                }
+                else
+                {
+                    throw new IOException($"Unable to serialize solution file global section type: {globalSection.GetType().FullName}");
+                }
+            }
+            tabinatedWriter.DecreaseTabination();
+
+            tabinatedWriter.WriteLine("EndGlobal");
+        }
+
+        private static void SerializeGlobal(TabinatedWriter writer, ISerializableSolutionFileGlobalSection serializableGlobalSection)
+        {
+            var globalSectionLine = $"GlobalSection({serializableGlobalSection.Name}) = {Utilities.ToStringStandard(serializableGlobalSection.PreOrPostSolution)}";
+            writer.WriteLine(globalSectionLine);
+
+            writer.IncreaseTabination();
+            foreach (var line in serializableGlobalSection.ContentLines)
+            {
+                writer.WriteLine(line);
+            }
+            writer.DecreaseTabination();
+
+            writer.WriteLine("EndGlobalSection");
+        }
+
+        private static void SerializeProjectReferences(TextWriter writer, SolutionFile solutionFile)
+        {
+            foreach (var solutionProjectFileReference in solutionFile.SolutionFileProjectReferences)
+            {
+                var projectLine = $@"Project(""{solutionProjectFileReference.ProjectTypeGUID.ToString("B").ToUpperInvariant()}"") = ""{solutionProjectFileReference.ProjectName}"", ""{solutionProjectFileReference.ProjectFileRelativePathValue}"", ""{solutionProjectFileReference.ProjectGUID.ToString("B").ToUpperInvariant()}""";
+                writer.WriteLine(projectLine);
+
+                writer.WriteLine("EndProject");
+            }
+        }
+
+        private static void DeserializeGlobals(TextReader reader, ref string currentLine, SolutionFile solutionFile)
+        {
+            if (!SolutionFileTextSerializer.GlobalLineRegex.IsMatch(currentLine))
+            {
+                throw new Exception($"Unknown line.\nExpected: \"Global\".\nFound: {currentLine}");
+            }
+
+            currentLine = reader.ReadLine().Trim();
+
+            while (!SolutionFileTextSerializer.GlobalLineEndRegex.IsMatch(currentLine))
+            {
+                SolutionFileTextSerializer.DeserializeGlobal(reader, ref currentLine, solutionFile);
+
+                currentLine = reader.ReadLine().Trim();
+            }
+        }
+
+        private static void DeserializeGlobal(TextReader reader, ref string currentLine, SolutionFile solutionFile)
+        {
+            if (!SolutionFileTextSerializer.GlobalSectionRegex.IsMatch(currentLine))
+            {
+                throw new Exception($"Unknown line.\nExpected: \"GlobalSection\".\nFound: {currentLine}");
+            }
+
+            var globalSectionMatches = Regex.Matches(currentLine, SolutionFileTextSerializer.GlobalSectionLineValuesRegexPattern);
+
+            var sectionName = globalSectionMatches[0].Value.TrimStart('(').TrimEnd(')');
+            var preOrPostSolutionStr = globalSectionMatches[1].Value;
+
+            var preOrPostSolution = Utilities.ToPreOrPostSolution(preOrPostSolutionStr);
+
+            ISolutionFileGlobalSection globalSection;
+            if (sectionName == NestedProjectsSolutionFileGlobalSection.NestedProjectsGlobalSectionName)
+            {
+                globalSection = SolutionFileTextSerializer.DeserializeNestedProjectsGlobalSection(reader, ref currentLine, sectionName, preOrPostSolution);
+            }
+            else
+            {
+                globalSection = SolutionFileTextSerializer.DeserializeGeneralGlobal(reader, ref currentLine, sectionName, preOrPostSolution);
+            }
+            solutionFile.GlobalSections.Add(globalSection);
+        }
+
+        private static NestedProjectsSolutionFileGlobalSection DeserializeNestedProjectsGlobalSection(TextReader reader, ref string currentLine, string sectionName, PreOrPostSolution preOrPostSolution)
+        {
+            var nestedProjectGlobalSection = new NestedProjectsSolutionFileGlobalSection
+            {
+                Name = sectionName,
+                PreOrPostSolution = preOrPostSolution
+            };
+
+            currentLine = reader.ReadLine().Trim();
+
+            while (!SolutionFileTextSerializer.GlobalSectionEndRegex.IsMatch(currentLine))
+            {
+                var projectNesting = ProjectNesting.Deserialize(currentLine);
+                nestedProjectGlobalSection.ProjectNestings.Add(projectNesting);
+
+                currentLine = reader.ReadLine().Trim();
+            }
+
+            return nestedProjectGlobalSection;
+        }
+
+        private static GeneralSolutionFileGlobalSection DeserializeGeneralGlobal(TextReader reader, ref string currentLine, string sectionName, PreOrPostSolution preOrPostSolution)
+        {
+            var globalSection = new GeneralSolutionFileGlobalSection
+            {
+                Name = sectionName,
+                PreOrPostSolution = preOrPostSolution,
+            };
+
+            currentLine = reader.ReadLine().Trim();
+
+            while (!SolutionFileTextSerializer.GlobalSectionEndRegex.IsMatch(currentLine))
+            {
+                globalSection.Lines.Add(currentLine);
+
+                currentLine = reader.ReadLine().Trim();
+            }
+
+            return globalSection;
+        }
+
+        private static void DeserializeProjects(TextReader reader, ref string currentLine, SolutionFile solutionFile)
+        {
+            if (!SolutionFileTextSerializer.ProjectLineRegex.IsMatch(currentLine))
+            {
+                throw new Exception($"Unknown line.\nExpected: \"Project...\".\nFound: {currentLine}");
+            }
+
+            while (!SolutionFileTextSerializer.GlobalLineRegex.IsMatch(currentLine))
+            {
+                SolutionFileTextSerializer.DeserializeProject(reader, ref currentLine, solutionFile);
+
+                currentLine = reader.ReadLine();
+            }
+        }
+
+        private static void DeserializeProject(TextReader reader, ref string currentLine, SolutionFile solutionFile)
+        {
+            if (!SolutionFileTextSerializer.ProjectLineRegex.IsMatch(currentLine))
+            {
+                throw new Exception($"Unknown line.\nExpected: \"Project...\".\nFound: {currentLine}");
+            }
+
+            var matches = Regex.Matches(currentLine, SolutionFileTextSerializer.ProjectLineValuesRegexPattern);
+
+            var projectTypeGUIDStr = matches[0].Value.Trim('"');
+            var projectName = matches[1].Value.Trim('"');
+            var projectFileRelativePathValue = matches[2].Value.Trim('"');
+            var projectGUIDStr = matches[3].Value.Trim('"');
+
+            var projectTypeGUID = Guid.Parse(projectTypeGUIDStr);
+            var projectGUID = Guid.Parse(projectGUIDStr);
+
+            var solutionProjectFileReference = new SolutionFileProjectReference
+            {
+                ProjectTypeGUID = projectTypeGUID,
+                ProjectName = projectName,
+                ProjectFileRelativePathValue = projectFileRelativePathValue,
+                ProjectGUID = projectGUID
+            };
+
+            solutionFile.SolutionFileProjectReferences.Add(solutionProjectFileReference);
+
+            currentLine = reader.ReadLine();
+            if (!SolutionFileTextSerializer.ProjectLineEndRegex.IsMatch(currentLine))
+            {
+                throw new Exception($"Unknown line.\nExpected: \"EndProject\".\nFound: {currentLine}");
+            }
+        }
+
+        #endregion
 
 
         public SolutionFile Deserialize(TextReader reader)
@@ -58,17 +244,17 @@ namespace R5T.Code.VisualStudio.IO
 
             var currentLine = reader.ReadLine();
 
-            if(this.ProjectLineRegex.IsMatch(currentLine))
+            if(SolutionFileTextSerializer.ProjectLineRegex.IsMatch(currentLine))
             {
-                this.DeserializeProjects(reader, ref currentLine, solutionFile);
+                SolutionFileTextSerializer.DeserializeProjects(reader, ref currentLine, solutionFile);
             }
 
-            if(!this.GlobalLineRegex.IsMatch(currentLine))
+            if(!SolutionFileTextSerializer.GlobalLineRegex.IsMatch(currentLine))
             {
                 throw new Exception($"Unknown line.\nExpected: \"Global\".\nFound: {currentLine}");
             }
 
-            this.DeserializeGlobals(reader, ref currentLine, solutionFile);
+            SolutionFileTextSerializer.DeserializeGlobals(reader, ref currentLine, solutionFile);
 
             var blankEndLine = reader.ReadLine();
 
@@ -80,91 +266,25 @@ namespace R5T.Code.VisualStudio.IO
             return solutionFile;
         }
 
-        private void DeserializeGlobals(TextReader reader, ref string currentLine, SolutionFile solutionFile)
+        
+
+        public void Serialize(TextWriter writer, SolutionFile solutionFile)
         {
-            if (!this.GlobalLineRegex.IsMatch(currentLine))
-            {
-                throw new Exception($"Unknown line.\nExpected: \"Global\".\nFound: {currentLine}");
-            }
+            writer.WriteLine(); // Blank first line.
 
-            currentLine = reader.ReadLine().Trim();
+            var formatVersionLine = $"Microsoft Visual Studio Solution File, Format Version {solutionFile.FormatVersion.Major}.{solutionFile.FormatVersion.Minor:00}";
+            writer.WriteLine(formatVersionLine);
+            writer.WriteLine(solutionFile.VisualStudioMoniker);
+            var vsVersionLine = $"VisualStudioVersion = {solutionFile.VisualStudioVersion}";
+            writer.WriteLine(vsVersionLine);
+            var vsMinimumVersionLine = $"MinimumVisualStudioVersion = {solutionFile.MinimumVisualStudioVersion}";
+            writer.WriteLine(vsMinimumVersionLine);
 
-            while(!this.GlobalLineEndRegex.IsMatch(currentLine))
-            {
-                this.DeserializeGlobal(reader, ref currentLine, solutionFile);
-            }
-        }
+            SolutionFileTextSerializer.SerializeProjectReferences(writer, solutionFile);
 
-        private void DeserializeGlobal(TextReader reader, ref string currentLine, SolutionFile solutionFile)
-        {
-            if (!this.GlobalSectionRegex.IsMatch(currentLine))
-            {
-                throw new Exception($"Unknown line.\nExpected: \"GlobalSection\".\nFound: {currentLine}");
-            }
+            SolutionFileTextSerializer.SerializeGlobals(writer, solutionFile);
 
-            var globalSectionMatches = Regex.Matches(currentLine, SolutionFileTextSerializer.GlobalSectionLineValuesRegexPattern);
-
-            currentLine = reader.ReadLine().Trim();
-
-            while(!this.GlobalSectionEndRegex.IsMatch(currentLine))
-            {
-
-                currentLine = reader.ReadLine().Trim();
-            }
-        }
-
-        private void DeserializeProjects(TextReader reader, ref string currentLine, SolutionFile solutionFile)
-        {
-            if (!this.ProjectLineRegex.IsMatch(currentLine))
-            {
-                throw new Exception($"Unknown line.\nExpected: \"Project...\".\nFound: {currentLine}");
-            }
-
-            while (!this.GlobalLineRegex.IsMatch(currentLine))
-            {
-                this.DeserializeProject(reader, ref currentLine, solutionFile);
-
-                currentLine = reader.ReadLine();
-            }
-        }
-
-        private void DeserializeProject(TextReader reader, ref string currentLine, SolutionFile solutionFile)
-        {
-            if (!this.ProjectLineRegex.IsMatch(currentLine))
-            {
-                throw new Exception($"Unknown line.\nExpected: \"Project...\".\nFound: {currentLine}");
-            }
-
-            var matches = Regex.Matches(currentLine, SolutionFileTextSerializer.ProjectLineValuesRegexPattern);
-
-            var projectTypeGUIDStr = matches[0].Value;
-            var projectName = matches[1].Value;
-            var projectFileRelativePathValue = matches[2].Value;
-            var projectGUIDStr = matches[3].Value;
-
-            var projectTypeGUID = Guid.Parse(projectTypeGUIDStr);
-            var projectGUID = Guid.Parse(projectGUIDStr);
-
-            var solutionProjectFileReference = new SolutionFileProjectReference
-            {
-                ProjectTypeGUID = projectTypeGUID,
-                ProjectName = projectName,
-                ProjectFileRelativePathValue = projectFileRelativePathValue,
-                ProjectGUID = projectGUID
-            };
-
-            solutionFile.SolutionFileProjectReferences.Add(solutionProjectFileReference);
-
-            currentLine = reader.ReadLine();
-            if(!this.ProjectLineEndRegex.IsMatch(currentLine))
-            {
-                throw new Exception($"Unknown line.\nExpected: \"EndProject\".\nFound: {currentLine}");
-            }
-        }
-
-        public void Serialize(TextWriter writer, SolutionFile value)
-        {
-            throw new NotImplementedException();
+            // Blank last line for free due to prior WriteLine().
         }
     }
 }
