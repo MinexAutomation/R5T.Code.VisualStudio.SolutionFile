@@ -2,7 +2,6 @@
 using System.Text.RegularExpressions;
 
 using R5T.Code.VisualStudio.IO;
-using R5T.Code.VisualStudio.Model;
 using R5T.NetStandard.IO;
 
 
